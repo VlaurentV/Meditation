@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Souffle intérieur</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Lato:wght@100;300&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --gold: #c9a96e;
+    --gold-dim: #7a6240;
+    --text: #e8e0d0;
+    --muted: #5a5650;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Lato', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Fond ambiant */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 0%, rgba(201,169,110,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 30% at 80% 80%, rgba(100,120,180,0.05) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .container {
+    text-align: center;
+    padding: 3rem 2rem;
+    width: min(420px, 95vw);
+  }
+
+  .title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 3rem;
+    font-weight: 300;
+  }
+
+  /* Cercle principal */
+  .ring-wrap {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    margin: 0 auto 2.5rem;
+  }
+
+  svg.ring {
+    position: absolute;
+    inset: 0;
+    transform: rotate(-90deg);
+  }
+
+  .ring-track {
+    fill: none;
+    stroke: var(--surface);
+    stroke-width: 2;
+  }
+
+  .ring-progress {
+    fill: none;
+    stroke: var(--gold);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s linear;
+    filter: drop-shadow(0 0 6px rgba(201,169,110,0.5));
+  }
+
+  .orb-wrap {
+    position: absolute;
+    inset: 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #1e2130, #0a0c10);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+  }
+
+  .orb-wrap:hover { transform: scale(1.02); }
+
+  .orb-wrap::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(201,169,110,0.15);
+  }
+
+  .timer-display {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 3rem;
+    font-weight: 300;
+    letter-spacing: 0.05em;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .timer-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 0.4rem;
+  }
+
+  /* Breath animation */
+  .breath-ring {
+    position: absolute;
+    inset: -10px;
+    border-radius: 50%;
+    border: 1px solid rgba(201,169,110,0.12);
+    animation: none;
+  }
+
+  @keyframes breathe {
+    0%, 100% { transform: scale(1); opacity: 0.15; }
+    50% { transform: scale(1.08); opacity: 0.4; }
+  }
+
+  .running .breath-ring {
+    animation: breathe 4s ease-in-out infinite;
+  }
+
+  /* Phrase du moment */
+  .phrase {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 1.05rem;
+    color: rgba(232,224,208,0.55);
+    line-height: 1.7;
+    min-height: 3.5rem;
+    margin-bottom: 2.5rem;
+    transition: opacity 0.8s ease;
+  }
+
+  /* Durée */
+  .durations {
+    display: flex;
+    justify-content: center;
+    gap: 0.8rem;
+    margin-bottom: 2rem;
+  }
+
+  .dur-btn {
+    background: none;
+    border: 1px solid var(--muted);
+    color: var(--muted);
+    font-family: 'Lato', sans-serif;
+    font-weight: 100;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    padding: 0.4rem 0.9rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border-radius: 2px;
+  }
+
+  .dur-btn:hover, .dur-btn.active {
+    border-color: var(--gold-dim);
+    color: var(--gold);
+  }
+
+  /* Boutons */
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .btn {
+    background: none;
+    border: 1px solid var(--gold-dim);
+    color: var(--gold);
+    font-family: 'Lato', sans-serif;
+    font-weight: 100;
+    font-size: 0.8rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    padding: 0.65rem 1.8rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border-radius: 2px;
+  }
+
+  .btn:hover {
+    background: rgba(201,169,110,0.08);
+    box-shadow: 0 0 20px rgba(201,169,110,0.1);
+  }
+
+  .btn.secondary {
+    border-color: var(--muted);
+    color: var(--muted);
+  }
+
+  .btn.secondary:hover {
+    border-color: var(--gold-dim);
+    color: var(--gold-dim);
+    background: none;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="title">Souffle intérieur</div>
+
+  <div class="ring-wrap" id="ringWrap">
+    <div class="breath-ring"></div>
+    <svg class="ring" viewBox="0 0 220 220">
+      <circle class="ring-track" cx="110" cy="110" r="100"/>
+      <circle class="ring-progress" id="progress" cx="110" cy="110" r="100"/>
+    </svg>
+    <div class="orb-wrap" onclick="toggleTimer()">
+      <div class="timer-display" id="display">5:00</div>
+      <div class="timer-label" id="timerLabel">appuie pour commencer</div>
+    </div>
+  </div>
+
+  <div class="phrase" id="phrase">Laisse le silence s'installer.</div>
+
+  <div class="durations">
+    <button class="dur-btn active" onclick="setDuration(5, this)">5 min</button>
+    <button class="dur-btn" onclick="setDuration(10, this)">10 min</button>
+    <button class="dur-btn" onclick="setDuration(15, this)">15 min</button>
+    <button class="dur-btn" onclick="setDuration(20, this)">20 min</button>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="mainBtn" onclick="toggleTimer()">Commencer</button>
+    <button class="btn secondary" onclick="resetTimer()">Réinitialiser</button>
+  </div>
+</div>
+
+<script>
+  const phrases = [
+    "Laisse le silence s'installer.",
+    "Chaque souffle est un retour à soi.",
+    "Tu es l'âme, calme et lumineuse.",
+    "Rien ne peut troubler ce centre.",
+    "Observe sans t'attacher.",
+    "La paix est ta nature profonde.",
+    "Reste simplement présent·e.",
+    "Laisse les pensées passer comme des nuages.",
+    "Tu es lumière, tu es conscience.",
+    "Dans le calme, tout devient clair.",
+  ];
+
+  const CIRCUMFERENCE = 2 * Math.PI * 100;
+  const progress = document.getElementById('progress');
+  progress.style.strokeDasharray = CIRCUMFERENCE;
+  progress.style.strokeDashoffset = 0;
+
+  let totalSeconds = 5 * 60;
+  let remaining = totalSeconds;
+  let interval = null;
+  let running = false;
+  let phraseIndex = 0;
+
+  function formatTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2,'0')}`;
+  }
+
+  function updateRing() {
+    const fraction = remaining / totalSeconds;
+    progress.style.strokeDashoffset = CIRCUMFERENCE * (1 - fraction);
+  }
+
+  function nextPhrase() {
+    phraseIndex = (phraseIndex + 1) % phrases.length;
+    const el = document.getElementById('phrase');
+    el.style.opacity = 0;
+    setTimeout(() => {
+      el.textContent = phrases[phraseIndex];
+      el.style.opacity = 1;
+    }, 800);
+  }
+
+  function toggleTimer() {
+    if (remaining === 0) { resetTimer(); return; }
+    running = !running;
+    const wrap = document.getElementById('ringWrap');
+    const btn = document.getElementById('mainBtn');
+    const label = document.getElementById('timerLabel');
+
+    if (running) {
+      wrap.classList.add('running');
+      btn.textContent = 'Pause';
+      label.textContent = 'en cours…';
+      let phraseTimer = 0;
+      interval = setInterval(() => {
+        remaining--;
+        phraseTimer++;
+        document.getElementById('display').textContent = formatTime(remaining);
+        updateRing();
+        if (phraseTimer % 30 === 0) nextPhrase();
+        if (remaining <= 0) {
+          clearInterval(interval);
+          running = false;
+          wrap.classList.remove('running');
+          btn.textContent = 'Terminé';
+          label.textContent = 'séance terminée';
+          document.getElementById('phrase').textContent = 'Belle séance. Reviens doucement.';
+        }
+      }, 1000);
+    } else {
+      clearInterval(interval);
+      wrap.classList.remove('running');
+      btn.textContent = 'Reprendre';
+      label.textContent = 'en pause';
+    }
+  }
+
+  function resetTimer() {
+    clearInterval(interval);
+    running = false;
+    remaining = totalSeconds;
+    document.getElementById('display').textContent = formatTime(remaining);
+    document.getElementById('timerLabel').textContent = 'appuie pour commencer';
+    document.getElementById('mainBtn').textContent = 'Commencer';
+    document.getElementById('ringWrap').classList.remove('running');
+    document.getElementById('phrase').textContent = phrases[0];
+    document.getElementById('phrase').style.opacity = 1;
+    progress.style.strokeDashoffset = 0;
+  }
+
+  function setDuration(min, el) {
+    document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    totalSeconds = min * 60;
+    resetTimer();
+  }
+</script>
+</body>
+</html>
